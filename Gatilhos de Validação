@@ -1,0 +1,46 @@
+DELIMITER $$
+
+#1. Bloquear Nota Fora do Intervalo
+CREATE TRIGGER tr_valida_nota_range BEFORE INSERT ON notas
+FOR EACH ROW
+BEGIN
+    IF NOT fn_validar_nota(NEW.valor) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Erro: A nota deve estar entre 0 e 10.';
+    END IF;
+END $$
+
+#2. Impedir Matrícula de Aluno Inativo
+CREATE TRIGGER tr_valida_aluno_ativo BEFORE INSERT ON matriculas
+FOR EACH ROW
+BEGIN
+    IF (SELECT status FROM alunos WHERE id = NEW.aluno_id) = 'Inativo' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Erro: Alunos inativos não podem realizar matrícula.';
+    END IF;
+END $$
+
+#3. Impedir Matrícula Duplicada na Mesma Turma
+CREATE TRIGGER tr_valida_duplicidade_matricula BEFORE INSERT ON matriculas
+FOR EACH ROW
+BEGIN
+    IF (SELECT COUNT(*) FROM matriculas WHERE aluno_id = NEW.aluno_id AND turma_id = NEW.turma_id AND status = 'Matriculado') > 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Erro: Aluno já está matriculado nesta turma.';
+    END IF;
+END $$
+
+#4. Bloquear Carga Horária Negativa
+CREATE TRIGGER tr_valida_carga_horaria BEFORE INSERT ON disciplinas
+FOR EACH ROW
+BEGIN
+    IF NEW.carga_horaria <= 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Erro: Carga horária deve ser maior que zero.';
+    END IF;
+END $$
+
+#5. Impedir Aluno Menor de Idade (Regra de Negócio: Min 14 anos)
+CREATE TRIGGER tr_valida_idade_minima BEFORE INSERT ON alunos
+FOR EACH ROW
+BEGIN
+    IF TIMESTAMPDIFF(YEAR, NEW.data_nascimento, CURDATE()) < 14 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Erro: O aluno deve ter pelo menos 14 anos.';
+    END IF;
+END $$
