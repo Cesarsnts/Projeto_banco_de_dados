@@ -1,0 +1,40 @@
+#11. Ajustar Vagas na Turma após Matrícula
+CREATE TRIGGER tr_auto_reduzir_vagas AFTER INSERT ON matriculas
+FOR EACH ROW
+BEGIN
+    UPDATE turmas SET vagas_disponiveis = vagas_disponiveis - 1 WHERE id = NEW.turma_id;
+END $$
+
+# 12. Repor Vagas após Cancelamento
+CREATE TRIGGER tr_auto_repor_vagas AFTER UPDATE ON matriculas
+FOR EACH ROW
+BEGIN
+    IF NEW.status = 'Cancelado' AND OLD.status = 'Matriculado' THEN
+        UPDATE turmas SET vagas_disponiveis = vagas_disponiveis + 1 WHERE id = NEW.turma_id;
+    END IF;
+END $$
+
+#13. Atualizar Carga Horária Total do Curso (Ao Inserir Disciplina)
+CREATE TRIGGER tr_auto_soma_carga AFTER INSERT ON disciplinas
+FOR EACH ROW
+BEGIN
+    UPDATE cursos SET carga_horaria_total = carga_horaria_total + NEW.carga_horaria WHERE id = NEW.curso_id;
+END $$
+
+#14. Inativar Aluno se todas Matrículas forem Canceladas
+CREATE TRIGGER tr_auto_inativar_aluno AFTER UPDATE ON matriculas
+FOR EACH ROW
+BEGIN
+    DECLARE total_ativas INT;
+    SELECT COUNT(*) INTO total_ativas FROM matriculas WHERE aluno_id = NEW.aluno_id AND status = 'Matriculado';
+    IF total_ativas = 0 THEN
+        UPDATE alunos SET status = 'Inativo' WHERE id = NEW.aluno_id;
+    END IF;
+END $$
+
+#15. Remover Notas ao Deletar Matrícula (Cascata Manual)
+CREATE TRIGGER tr_auto_limpa_notas BEFORE DELETE ON matriculas
+FOR EACH ROW
+BEGIN
+    DELETE FROM notas WHERE matricula_id = OLD.id;
+END $$
