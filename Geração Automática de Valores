@@ -1,0 +1,41 @@
+#Definir Data de Cadastro e Status Padrão
+CREATE TRIGGER tr_gen_data_cadastro BEFORE INSERT ON alunos
+FOR EACH ROW
+BEGIN
+    IF NEW.data_cadastro IS NULL THEN
+        SET NEW.data_cadastro = NOW();
+    END IF;
+    SET NEW.status = 'Ativo';
+END $$
+
+# Gerar E-mail Institucional Automático
+CREATE TRIGGER tr_gen_email_acad BEFORE INSERT ON alunos
+FOR EACH ROW
+BEGIN
+    SET NEW.email_institucional = LOWER(CONCAT(NEW.nome, '.', NEW.sobrenome, '@univ.edu.br'));
+END $$
+
+#Gerar Protocolo Único de Matrícula
+CREATE TRIGGER tr_gen_protocolo BEFORE INSERT ON matriculas
+FOR EACH ROW
+BEGIN
+    SET NEW.protocolo = CONCAT(YEAR(CURDATE()), '-', NEW.aluno_id, '-', FLOOR(RAND()*1000));
+END $$
+
+# Definir Nota Zero se Nula (Evitar campos vazios no boletim)
+CREATE TRIGGER tr_gen_nota_default BEFORE INSERT ON notas
+FOR EACH ROW
+BEGIN
+    IF NEW.valor IS NULL THEN
+        SET NEW.valor = 0.00;
+    END IF;
+END $$
+
+#Formatar Nomes para Título (Iniciais Maiúsculas)
+CREATE TRIGGER tr_gen_formatar_nome BEFORE INSERT ON alunos
+FOR EACH ROW
+BEGIN
+    SET NEW.nome = CONCAT(UPPER(LEFT(NEW.nome, 1)), LOWER(SUBSTRING(NEW.nome, 2)));
+END $$
+
+DELIMITER ;
