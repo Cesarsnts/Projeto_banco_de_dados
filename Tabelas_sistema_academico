@@ -1,0 +1,74 @@
+CREATE DATABASE sistema_academico;
+USE sistema_academico;
+
+-- Tabelas Base
+CREATE TABLE cursos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100),
+    carga_horaria_total INT DEFAULT 0
+);
+
+CREATE TABLE alunos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100),
+    sobrenome VARCHAR(100),
+    data_nascimento DATE,
+    email_institucional VARCHAR(100),
+    status ENUM('Ativo', 'Inativo', 'Pendente') DEFAULT 'Pendente',
+    data_cadastro DATETIME
+);
+
+CREATE TABLE disciplinas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100),
+    curso_id INT,
+    carga_horaria INT,
+    FOREIGN KEY (curso_id) REFERENCES cursos(id)
+);
+
+CREATE TABLE turmas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    disciplina_id INT,
+    vagas_disponiveis INT,
+    semestre VARCHAR(10),
+    FOREIGN KEY (disciplina_id) REFERENCES disciplinas(id)
+);
+
+CREATE TABLE matriculas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    aluno_id INT,
+    turma_id INT,
+    data_matricula DATETIME DEFAULT CURRENT_TIMESTAMP,
+    status ENUM('Matriculado', 'Cancelado') DEFAULT 'Matriculado',
+    protocolo VARCHAR(50),
+    FOREIGN KEY (aluno_id) REFERENCES alunos(id),
+    FOREIGN KEY (turma_id) REFERENCES turmas(id)
+);
+
+CREATE TABLE notas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    matricula_id INT,
+    valor DECIMAL(4,2),
+    tipo_avaliacao VARCHAR(20),
+    FOREIGN KEY (matricula_id) REFERENCES matriculas(id)
+);
+
+#Tabela de Auditoria
+CREATE TABLE logs_sistema (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tabela_afetada VARCHAR(50),
+    acao ENUM('INSERT', 'UPDATE', 'DELETE'),
+    dados_antigos JSON,
+    dados_novos JSON,
+    usuario VARCHAR(50),
+    data_hora DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+#Função de Apoio: Validar Nota
+DELIMITER $$
+CREATE FUNCTION fn_validar_nota(nota DECIMAL(4,2)) RETURNS BOOLEAN
+DETERMINISTIC
+BEGIN
+    RETURN (nota >= 0 AND nota <= 10);
+END $$
+DELIMITER ;
