@@ -1,0 +1,39 @@
+#6. Auditoria: Cadastro de Alunos
+CREATE TRIGGER tr_audit_aluno_ins AFTER INSERT ON alunos
+FOR EACH ROW
+BEGIN
+    INSERT INTO logs_sistema (tabela_afetada, acao, dados_novos, usuario)
+    VALUES ('alunos', 'INSERT', JSON_OBJECT('nome', NEW.nome, 'status', NEW.status), USER());
+END $$
+
+# 7. Auditoria: Alteração de Notas (Histórico)
+CREATE TRIGGER tr_audit_nota_upd AFTER UPDATE ON notas
+FOR EACH ROW
+BEGIN
+    INSERT INTO logs_sistema (tabela_afetada, acao, dados_antigos, dados_novos, usuario)
+    VALUES ('notas', 'UPDATE', JSON_OBJECT('valor', OLD.valor), JSON_OBJECT('valor', NEW.valor), USER());
+END $$
+
+# 8. Auditoria: Remoção de Disciplinas
+CREATE TRIGGER tr_audit_disc_del AFTER DELETE ON disciplinas
+FOR EACH ROW
+BEGIN
+    INSERT INTO logs_sistema (tabela_afetada, acao, dados_antigos, usuario)
+    VALUES ('disciplinas', 'DELETE', JSON_OBJECT('nome', OLD.nome), USER());
+END $$
+
+# 9. Auditoria: Cancelamento de Matrícula
+CREATE TRIGGER tr_audit_matricula_upd AFTER UPDATE ON matriculas
+FOR EACH ROW
+IF OLD.status <> NEW.status THEN
+    INSERT INTO logs_sistema (tabela_afetada, acao, dados_antigos, dados_novos, usuario)
+    VALUES ('matriculas', 'UPDATE', JSON_OBJECT('status', OLD.status), JSON_OBJECT('status', NEW.status), USER());
+END IF $$
+
+#10. Auditoria: Mudança de Carga Horária
+CREATE TRIGGER tr_audit_carga_horaria AFTER UPDATE ON disciplinas
+FOR EACH ROW
+IF OLD.carga_horaria <> NEW.carga_horaria THEN
+    INSERT INTO logs_sistema (tabela_afetada, acao, dados_antigos, dados_novos, usuario)
+    VALUES ('disciplinas', 'UPDATE', JSON_OBJECT('carga', OLD.carga_horaria), JSON_OBJECT('carga', NEW.carga_horaria), USER());
+END IF $$
